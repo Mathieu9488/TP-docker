@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: todo_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+    networks:
+      - todo_network
+
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+    container_name: todo_api
+    # Remove exposed ports since Nginx will handle this
+    # ports:
+    #   - "5000:5000"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    environment:
+      - MONGO_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/todo_db?authSource=admin
+    depends_on:
+      - mongodb
+    networks:
+      - todo_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: todo_frontend
+    # Remove exposed ports since Nginx will handle this
+    # ports:
+    #   - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost/api
+    depends_on:
+      - api
+    networks:
+      - todo_network
+      
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    container_name: todo_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - todo_network
+
+networks:
+  todo_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
