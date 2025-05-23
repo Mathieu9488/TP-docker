@@ -10,7 +10,7 @@ try {
 
   // Insertion d'un exemple de tâche
   db.todos.insertOne({
-    text: "Exemple de tâche Docker",
+    text: "Tache quotidienne (manger)",
     completed: false,
     createdAt: new Date()
   });
