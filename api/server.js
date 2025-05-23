@@ -117,5 +117,15 @@ mongoose.connection.on('connected', async () => {
   }
 });
 
+// Endpoint de santé pour le healthcheck
+app.get('/api/health', (req, res) => {
+  // Vérifier la connexion à MongoDB
+  if (mongoose.connection.readyState === 1) {
+    res.status(200).json({ status: 'ok' });
+  } else {
+    res.status(500).json({ status: 'error', message: 'Database connection lost' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
